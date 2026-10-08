@@ -151,12 +151,12 @@ body.kb nav,body.kb .dock{display:none}body.kb{padding-bottom:30px}
  <label for="s-foot" style="margin-top:10px">Pesan penutup nota</label><textarea id="s-foot" rows="3"></textarea>
 
  <h2 class="s2h">Printer thermal</h2>
- <div class="pst" id="bts"><span class="dot"></span><span id="bts-t"></span></div>
- <div class="g2"><button class="btn gold" onclick="btConnect()"><svg class="i"><use href="#i-bt"/></svg>Hubungkan</button><button class="btn" onclick="btTest()"><svg class="i"><use href="#i-printer"/></svg>Tes cetak</button></div>
- <button class="btn o" style="width:100%;margin-top:8px" onclick="btDisc()">Putuskan printer</button>
+ <label for="s-mode">Cara cetak</label><select id="s-mode" onchange="modeUI()"><option value="rawbt">Lewat aplikasi RawBT (disarankan)</option><option value="ble">Bluetooth langsung (hanya printer BLE)</option><option value="browser">Dialog cetak browser</option></select>
+ <div id="rb-box" style="margin-top:12px"><div class="pst"><span class="dot" style="background:var(--gold)"></span><span style="line-height:1.6"><b>Pemasangan cukup sekali:</b><br>1. Pasang aplikasi <b>RawBT</b> dari Play Store.<br>2. Pasangkan printer di Pengaturan Bluetooth HP.<br>3. Buka RawBT, pilih printer Anda, atur kertas 58 mm.<br>Setelah itu tombol Cetak di sini langsung mengirim nota.</span></div><a class="btn o" style="width:100%;text-decoration:none" href="https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter" target="_blank" rel="noopener">Buka RawBT di Play Store</a></div>
+ <div id="ble-box" style="margin-top:12px"><div class="pst" id="bts"><span class="dot"></span><span id="bts-t"></span></div><div class="g2"><button class="btn gold" onclick="btConnect()"><svg class="i"><use href="#i-bt"/></svg>Hubungkan</button><button class="btn o" onclick="btDisc()">Putuskan</button></div></div>
+ <button class="btn" style="width:100%;margin-top:12px" onclick="btTest()"><svg class="i"><use href="#i-printer"/></svg>Tes cetak</button>
  <div class="g2" style="margin-top:12px"><div><label for="s-cols">Lebar kertas</label><select id="s-cols"><option value="32">58 mm (32 kar.)</option><option value="42">80 mm (42 kar.)</option><option value="48">80 mm (48 kar.)</option></select></div><div><label for="s-feed">Spasi akhir (baris)</label><input type="number" id="s-feed" min="0" max="10" inputmode="numeric"></div></div>
- <label for="s-mode" style="margin-top:12px">Cara cetak</label><select id="s-mode"><option value="ble">Bluetooth langsung (tanpa aplikasi)</option><option value="rawbt">Lewat aplikasi RawBT</option><option value="browser">Dialog cetak browser</option></select>
- <p class="mu" style="margin:8px 0 0;line-height:1.5">Bluetooth langsung hanya jalan untuk printer Bluetooth LE di Chrome Android, dengan halaman dibuka lewat HTTPS. Jika printer tidak terbaca, pilih RawBT. Printer dipasangkan sekali di aplikasi itu, lalu nota terkirim otomatis dari sini.</p>
+ <p class="mu" style="margin:8px 0 0;line-height:1.5">Printer tipe Bluetooth Classic (misalnya RPP02N) tidak bisa dihubungi langsung oleh browser, karena itu RawBT dipakai sebagai penghubung.</p>
 
  <h2 class="s2h">Kecepatan layanan</h2><p class="mu" style="margin:0 0 8px">Isi persen tambahan biaya (contoh 20) dan durasi dalam jam (contoh 24).</p>
  <div class="er e mu"><span>Nama</span><span>% biaya</span><span>Jam</span><span></span></div><div id="eds"></div>
@@ -187,8 +187,8 @@ let SPEED=LS.g('ld_sp',DEF_SP),eds=[];
 const dur=h=>h%24===0?h/24+' hari':h+' jam';
 const ST=['Diterima','Dicuci','Selesai','Diambil'];
 const DEF=[['Cuci + Setrika','kg',7000,'k'],['Cuci Kering Lipat','kg',5000,'k'],['Setrika Saja','kg',4000,'k'],['Bed Cover','pcs',25000,'s'],['Selimut','pcs',20000,'s'],['Sprei','pcs',15000,'s'],['Jaket / Jas','pcs',15000,'s'],['Karpet','m²',15000,'s']].map((a,i)=>({id:'s'+i,name:a[0],unit:a[1],price:a[2],cat:a[3]}));
-const DEF_CFG={name:'Laundry Bersih',addr:'Jl. Contoh No. 1',tel:'0812-0000-0000',foot:'Terima kasih!\nCucian diambil dengan membawa nota ini.',cols:32,feed:3,mode:'ble',btName:''};
-let cfg={...DEF_CFG,...LS.g('ld_cfg',{})};if(cfg.useBrowser)cfg.mode='browser';if(!['ble','rawbt','browser'].includes(cfg.mode))cfg.mode='ble';
+const DEF_CFG={name:'Laundry Bersih',addr:'Jl. Contoh No. 1',tel:'0812-0000-0000',foot:'Terima kasih!\nCucian diambil dengan membawa nota ini.',cols:32,feed:3,mode:'rawbt',btName:''};
+const SC=LS.g('ld_cfg',{});let cfg={...DEF_CFG,...SC};if(!SC.v){cfg.mode=SC.useBrowser?'browser':'rawbt';cfg.v=3;LS.s('ld_cfg',cfg)}if(!['ble','rawbt','browser'].includes(cfg.mode))cfg.mode='rawbt';
 let sv=LS.g('ld_sv',DEF),orders=LS.g('ld_orders',[]),Q={},LG={},spd=SPEED[0].k,curId=null,flt=-1,ed=[];
 const SP=()=>SPEED.find(x=>x.k===spd)||SPEED[0],sisa=o=>Math.max(0,o.total-o.bayar),O=id=>orders.find(o=>o.id===id),cl=id=>$(id).classList.remove('on');
 const svList=()=>{const m=sv.map(s=>LG[s.id]||s);Object.values(LG).forEach(l=>{if(!sv.some(s=>s.id===l.id))m.push(l)});return m};
@@ -287,18 +287,19 @@ async function btPick(){if(!navigator.bluetooth)throw new Error('Browser ini bel
 async function btEnsure(){if(live())return;if(BT.dev){try{await btOpen(BT.dev)}catch(e){}}if(!live())await btPick()}
 async function btSend(b){const c=BT.ch,nr=!!(c.properties.writeWithoutResponse&&c.writeValueWithoutResponse);let N=BT.n,i=0;
  while(i<b.length){const part=b.slice(i,i+N);try{nr?await c.writeValueWithoutResponse(part):await c.writeValue(part);i+=N;await sleep(25)}catch(e){if(N>20){N=BT.n=20;continue}throw e}}}
-function sendRawBT(L){const b=toBytes(L,+cfg.feed);let s='';for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);location.href='intent:base64,'+btoa(s)+'#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;'}
+function sendRawBT(L){const b=toBytes(L,+cfg.feed);let s='';for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);toast('Mengirim ke RawBT…','info');location.href='intent:base64,'+btoa(s)+'#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;'}
 async function printLines(L){if(BT.busy)return;BT.busy=true;
  try{await btEnsure();toast('Mencetak…','info');await btSend(toBytes(L,+cfg.feed));toast('Nota tercetak')}
  catch(e){if(isCancel(e))toast('Pemilihan printer dibatalkan','info');else if(/tidak terbaca/.test(btErr(e)))dlg('Printer tidak terbaca','Printer'+(BT.tried?' "'+BT.tried+'"':'')+' tidak membuka layanan Bluetooth LE, kemungkinan Bluetooth Classic. Browser tidak bisa mengirim data langsung ke jenis printer ini. Kirim nota lewat aplikasi RawBT (gratis, printer dipasangkan sekali di sana)?',()=>sendRawBT(L),false,'Kirim ke RawBT');else toast(btErr(e),'err')}
  finally{BT.busy=false;btUI()}}
 function printOrder(o){if(!o)return;const L=()=>rcptLines(o,Wd());if(cfg.mode==='browser')return prn(o);if(cfg.mode==='rawbt')return sendRawBT(L());if(!navigator.bluetooth){toast('Browser tanpa Bluetooth, memakai dialog cetak','info');return prn(o)}printLines(L())}
-function btClick(){if(cfg.mode!=='ble')return toast('Cara cetak: '+(cfg.mode==='rawbt'?'RawBT':'dialog browser')+'. Ubah di Pengaturan','info');if(!navigator.bluetooth)return toast('Bluetooth langsung perlu Chrome di Android','info');if(live())return toast('Terhubung ke '+(BT.dev.name||'printer'),'info');btConnect()}
+function btClick(){if(cfg.mode!=='ble')return openSet();if(!navigator.bluetooth)return toast('Bluetooth langsung perlu Chrome di Android','info');if(live())return toast('Terhubung ke '+(BT.dev.name||'printer'),'info');btConnect()}
 async function btConnect(){try{await btPick();toast('Terhubung ke '+(BT.dev.name||'printer'))}catch(e){isCancel(e)||toast(btErr(e),'err')}}
 function btDisc(){if(BT.dev&&BT.dev.gatt.connected)BT.dev.gatt.disconnect();BT.ch=null;cfg.btName='';LS.s('ld_cfg',cfg);btUI();toast('Printer diputuskan','info')}
 function btTest(){cfg.cols=+$('s-cols').value||32;cfg.feed=Math.max(0,Math.min(10,+$('s-feed').value||0));cfg.mode=$('s-mode').value;const L=testLines(cfg.cols);if(cfg.mode==='rawbt')return sendRawBT(L);if(cfg.mode==='browser')return toast('Mode dialog browser: coba lewat tombol Cetak pada order','info');if(!navigator.bluetooth){toast('Bluetooth langsung tidak tersedia di browser ini','err');return}printLines(L)}
 function btUI(){const ok=live(),sup=!!navigator.bluetooth;$('btp').classList.toggle('ok',ok);$('btt').textContent=cfg.mode==='rawbt'?'RawBT':cfg.mode==='browser'?'Browser':ok?(BT.dev.name||'Printer'):sup?'Hubungkan':'Cetak';
  $('bts').classList.toggle('ok',ok);$('bts-t').textContent=ok?'Terhubung: '+(BT.dev.name||'printer'):sup?(cfg.btName?'Belum tersambung ('+cfg.btName+'). Nyalakan printer lalu ketuk Hubungkan.':'Belum ada printer. Nyalakan printer lalu ketuk Hubungkan.'):'Browser ini tidak mendukung Bluetooth langsung (iPhone/Safari). Gunakan Chrome di Android atau dialog cetak browser.'}
+function modeUI(){const m=$('s-mode').value;$('rb-box').hidden=m!=='rawbt';$('ble-box').hidden=m!=='ble'}
 async function btInit(){btUI();if(!navigator.bluetooth||!navigator.bluetooth.getDevices||!cfg.btName)return;try{const d=(await navigator.bluetooth.getDevices()).find(x=>x.name===cfg.btName);if(d)await btOpen(d)}catch(e){}}
 
 /* ===== Pengaturan ===== */
@@ -306,7 +307,7 @@ function rEd(){$('ed').innerHTML=ed.map((s,i)=>`<div class="er ${s.cat}"><input 
 function rEs(){$('eds').innerHTML=eds.map((s,i)=>`<div class="er e"><input value="${esc(s.n)}" placeholder="Nama" onchange="eds[${i}].n=this.value"><input type="number" step="any" min="0" value="${s.pct}" onchange="eds[${i}].pct=Math.max(0,+this.value||0)"><input type="number" step="any" min="0.5" value="${s.h}" onchange="eds[${i}].h=Math.max(0.5,+this.value||1)"><button onclick="eds.splice(${i},1);rEs()" aria-label="Hapus">${I('x')}</button></div>`).join('')}
 function addSp(){eds.push({k:'p'+Date.now(),n:'',pct:20,h:24});rEs()}
 function addSv(c){ed.push({id:'s'+Date.now(),name:'',unit:c==='k'?'kg':'pcs',price:0,cat:c});rEd()}
-function openSet(){$('s-name').value=cfg.name;$('s-addr').value=cfg.addr;$('s-tel').value=cfg.tel;$('s-foot').value=cfg.foot;$('s-cols').value=String(cfg.cols);$('s-feed').value=cfg.feed;$('s-mode').value=cfg.mode;ed=JSON.parse(JSON.stringify(sv));rEd();eds=JSON.parse(JSON.stringify(SPEED));rEs();btUI();$('m-set').classList.add('on')}
+function openSet(){$('s-name').value=cfg.name;$('s-addr').value=cfg.addr;$('s-tel').value=cfg.tel;$('s-foot').value=cfg.foot;$('s-cols').value=String(cfg.cols);$('s-feed').value=cfg.feed;$('s-mode').value=cfg.mode;modeUI();ed=JSON.parse(JSON.stringify(sv));rEd();eds=JSON.parse(JSON.stringify(SPEED));rEs();btUI();$('m-set').classList.add('on')}
 function saveSet(){cfg={...cfg,name:$('s-name').value.trim()||'Laundry',addr:$('s-addr').value.trim(),tel:$('s-tel').value.trim(),foot:$('s-foot').value,cols:+$('s-cols').value||32,feed:Math.max(0,Math.min(10,+$('s-feed').value||0)),mode:$('s-mode').value};delete cfg.useBrowser;sv=ed.filter(s=>s.name.trim());LS.s('ld_cfg',cfg);LS.s('ld_sv',sv);SPEED=eds.filter(x=>x.n.trim()).map(x=>({k:x.k,n:x.n.trim(),pct:x.pct,h:x.h}));if(!SPEED.length)SPEED=JSON.parse(JSON.stringify(DEF_SP));if(!SPEED.some(x=>x.k===spd))spd=SPEED[0].k;LS.s('ld_sp',SPEED);renderSp();if(!curId)setEst();head();btUI();renderSv();calc();cl('m-set');toast('Pengaturan tersimpan')}
 
 /* Sembunyikan dock/nav saat keyboard HP terbuka */
